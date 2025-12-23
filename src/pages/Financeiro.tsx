@@ -1,5 +1,8 @@
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
-import { DollarSign } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { CashFlowTab } from "@/components/financeiro/CashFlowTab";
+import { CommissionReportTab } from "@/components/financeiro/CommissionReportTab";
+import { DollarSign, FileText } from "lucide-react";
 
 export default function Financeiro() {
   return (
@@ -9,16 +12,27 @@ export default function Financeiro() {
           <h1 className="text-3xl font-bold tracking-tight text-foreground">Financeiro</h1>
           <p className="mt-1 text-muted-foreground">Controle de caixa e comissões</p>
         </div>
-        
-        <div className="flex min-h-[400px] items-center justify-center rounded-lg border border-dashed border-border bg-card/50">
-          <div className="flex flex-col items-center gap-4 text-center">
-            <DollarSign className="h-12 w-12 text-muted-foreground/50" />
-            <div>
-              <h3 className="text-lg font-medium text-foreground">Módulo financeiro em breve</h3>
-              <p className="text-sm text-muted-foreground">A funcionalidade será implementada na próxima fase</p>
-            </div>
-          </div>
-        </div>
+
+        <Tabs defaultValue="cash-flow" className="space-y-6">
+          <TabsList className="bg-muted">
+            <TabsTrigger value="cash-flow" className="flex items-center gap-2">
+              <DollarSign className="h-4 w-4" />
+              Fluxo de Caixa
+            </TabsTrigger>
+            <TabsTrigger value="commission" className="flex items-center gap-2">
+              <FileText className="h-4 w-4" />
+              Relatório de Comissões
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="cash-flow" className="mt-6">
+            <CashFlowTab />
+          </TabsContent>
+
+          <TabsContent value="commission" className="mt-6">
+            <CommissionReportTab />
+          </TabsContent>
+        </Tabs>
       </div>
     </DashboardLayout>
   );

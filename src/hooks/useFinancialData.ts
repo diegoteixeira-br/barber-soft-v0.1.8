@@ -1,0 +1,111 @@
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { useCurrentUnit } from "@/contexts/UnitContext";
+import { startOfDay, endOfDay, startOfWeek, endOfWeek, startOfMonth, endOfMonth } from "date-fns";
+
+export interface FinancialAppointment {
+  id: string;
+  client_name: string;
+  client_phone: string | null;
+  start_time: string;
+  end_time: string;
+  total_price: number;
+  status: string;
+  barber: {
+    id: string;
+    name: string;
+    commission_rate: number | null;
+  } | null;
+  service: {
+    id: string;
+    name: string;
+    price: number;
+  } | null;
+}
+
+export interface DateRange {
+  start: Date;
+  end: Date;
+}
+
+export function useFinancialData(dateRange?: DateRange, barberId?: string | null) {
+  const { currentUnitId } = useCurrentUnit();
+
+  const { data: appointments = [], isLoading, error, refetch } = useQuery({
+    queryKey: ["financial-appointments", currentUnitId, dateRange?.start?.toISOString(), dateRange?.end?.toISOString(), barberId],
+    queryFn: async () => {
+      if (!currentUnitId) return [];
+
+      let query = supabase
+        .from("appointments")
+        .select(`
+          id,
+          client_name,
+          client_phone,
+          start_time,
+          end_time,
+          total_price,
+          status,
+          barber:barbers(id, name, commission_rate),
+          service:services(id, name, price)
+        `)
+        .eq("unit_id", currentUnitId)
+        .eq("status", "completed")
+        .order("start_time", { ascending: false });
+
+      if (dateRange) {
+        query = query
+          .gte("start_time", dateRange.start.toISOString())
+          .lte("start_time", dateRange.end.toISOString());
+      }
+
+      if (barberId) {
+        query = query.eq("barber_id", barberId);
+      }
+
+      const { data, error } = await query;
+
+      if (error) throw error;
+
+      return (data || []).map(item => ({
+        ...item,
+        barber: Array.isArray(item.barber) ? item.barber[0] : item.barber,
+        service: Array.isArray(item.service) ? item.service[0] : item.service,
+      })) as FinancialAppointment[];
+    },
+    enabled: !!currentUnitId,
+  });
+
+  return {
+    appointments,
+    isLoading,
+    error,
+    refetch,
+  };
+}
+
+export function getDateRanges() {
+  const now = new Date();
+  return {
+    today: { start: startOfDay(now), end: endOfDay(now) },
+    week: { start: startOfWeek(now, { weekStartsOn: 0 }), end: endOfWeek(now, { weekStartsOn: 0 }) },
+    month: { start: startOfMonth(now), end: endOfMonth(now) },
+  };
+}
+
+export function getMonthRange(year: number, month: number): DateRange {
+  const date = new Date(year, month);
+  return {
+    start: startOfMonth(date),
+    end: endOfMonth(date),
+  };
+}
+
+export function calculateCommission(totalPrice: number, commissionRate: number | null): number {
+  const rate = commissionRate ?? 50;
+  return totalPrice * (rate / 100);
+}
+
+export function calculateProfit(totalPrice: number, commissionRate: number | null): number {
+  return totalPrice - calculateCommission(totalPrice, commissionRate);
+}
