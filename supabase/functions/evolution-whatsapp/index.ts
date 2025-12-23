@@ -79,13 +79,18 @@ serve(async (req) => {
 
         console.log(`Creating instance: ${instanceName}`);
 
-        // Create instance with webhook configuration
+        // Create instance with webhook configuration (Evolution API v2 format)
         const createPayload = {
           instanceName,
           token: instanceToken,
           qrcode: true,
-          webhook: N8N_WEBHOOK_URL,
-          events: ["MESSAGES_UPSERT"]
+          integration: "WHATSAPP-BAILEYS",
+          webhook: {
+            url: N8N_WEBHOOK_URL,
+            byEvents: true,
+            base64: false,
+            events: ["MESSAGES_UPSERT"]
+          }
         };
 
         console.log('Create payload:', JSON.stringify(createPayload));
