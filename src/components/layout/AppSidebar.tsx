@@ -14,6 +14,7 @@ import {
   ChevronDown,
   LogOut,
   Megaphone,
+  BarChart3,
 } from "lucide-react";
 import {
   Sidebar,
@@ -49,6 +50,7 @@ const menuItems = [
   { title: "Serviços", url: "/servicos", icon: Scissors },
   { title: "Financeiro", url: "/financeiro", icon: DollarSign },
   { title: "Marketing", url: "/marketing", icon: Megaphone },
+  { title: "Relatórios", url: "/relatorios", icon: BarChart3 },
   { title: "Unidades", url: "/unidades", icon: Building2 },
   { title: "Configurações", url: "/configuracoes", icon: Settings },
 ];

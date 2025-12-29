@@ -15,6 +15,7 @@ import Servicos from "./pages/Servicos";
 import Financeiro from "./pages/Financeiro";
 import Unidades from "./pages/Unidades";
 import Marketing from "./pages/Marketing";
+import Relatorios from "./pages/Relatorios";
 import Configuracoes from "./pages/Configuracoes";
 import NotFound from "./pages/NotFound";
 
@@ -31,6 +32,7 @@ const ProtectedRoutes = () => (
       <Route path="/financeiro" element={<Financeiro />} />
       <Route path="/unidades" element={<Unidades />} />
       <Route path="/marketing" element={<Marketing />} />
+      <Route path="/relatorios" element={<Relatorios />} />
       <Route path="/configuracoes" element={<Configuracoes />} />
     </Routes>
   </UnitProvider>
