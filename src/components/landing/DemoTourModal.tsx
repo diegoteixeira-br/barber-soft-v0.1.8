@@ -430,11 +430,14 @@ export const DemoTourModal = ({ open, onOpenChange }: DemoTourModalProps) => {
   const [currentSlide, setCurrentSlide] = useState(0);
   const [isMuted, setIsMuted] = useState(false);
   const [isLoadingAudio, setIsLoadingAudio] = useState(false);
+  const [audioEnded, setAudioEnded] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const audioCache = useRef<Map<number, string>>(new Map());
 
   const playNarration = useCallback(async (slideIndex: number) => {
     if (isMuted) return;
+    
+    setAudioEnded(false);
     
     // Stop any currently playing audio
     if (audioRef.current) {
@@ -447,6 +450,7 @@ export const DemoTourModal = ({ open, onOpenChange }: DemoTourModalProps) => {
       const audioUrl = audioCache.current.get(slideIndex)!;
       const audio = new Audio(audioUrl);
       audioRef.current = audio;
+      audio.onended = () => setAudioEnded(true);
       audio.play().catch(console.error);
       return;
     }
@@ -481,6 +485,7 @@ export const DemoTourModal = ({ open, onOpenChange }: DemoTourModalProps) => {
 
       const audio = new Audio(audioUrl);
       audioRef.current = audio;
+      audio.onended = () => setAudioEnded(true);
       await audio.play();
     } catch (error) {
       console.error("Failed to play narration:", error);
@@ -679,7 +684,11 @@ export const DemoTourModal = ({ open, onOpenChange }: DemoTourModalProps) => {
               variant="ghost"
               size="icon"
               onClick={nextSlide}
-              className="text-muted-foreground hover:text-foreground"
+              className={`transition-all duration-300 ${
+                audioEnded && currentSlide < slides.length - 1
+                  ? "text-primary animate-pulse scale-110 bg-primary/10"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
             >
               <ChevronRight className="w-6 h-6" />
             </Button>
