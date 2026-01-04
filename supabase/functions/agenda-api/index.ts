@@ -74,15 +74,32 @@ serve(async (req) => {
     const enrichedBody = { ...body, unit_id: resolvedUnitId, company_id: companyId };
 
     switch (action) {
+      // Consultar disponibilidade (alias: check_availability)
       case 'check':
+      case 'check_availability':
         return await handleCheck(supabase, enrichedBody, corsHeaders);
+      
+      // Criar agendamento (alias: schedule_appointment)
       case 'create':
+      case 'schedule_appointment':
         return await handleCreate(supabase, enrichedBody, corsHeaders);
+      
+      // Cancelar agendamento (alias: cancel_appointment)
       case 'cancel':
+      case 'cancel_appointment':
         return await handleCancel(supabase, enrichedBody, corsHeaders);
+      
+      // Consultar cliente pelo telefone
+      case 'check_client':
+        return await handleCheckClient(supabase, enrichedBody, corsHeaders);
+      
+      // Cadastrar novo cliente (sem agendamento)
+      case 'register_client':
+        return await handleRegisterClient(supabase, enrichedBody, corsHeaders);
+      
       default:
         return new Response(
-          JSON.stringify({ success: false, error: 'Ação inválida' }),
+          JSON.stringify({ success: false, error: 'Ação inválida. Actions válidas: check, check_availability, create, schedule_appointment, cancel, cancel_appointment, check_client, register_client' }),
           { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
     }
@@ -596,6 +613,183 @@ async function handleCancel(supabase: any, body: any, corsHeaders: any) {
       success: true,
       message: 'Agendamento cancelado com sucesso!',
       cancelled_appointment: cancelled[0]
+    }),
+    { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+  );
+}
+
+// Handler para consultar cliente pelo telefone
+async function handleCheckClient(supabase: any, body: any, corsHeaders: any) {
+  const rawPhone = body.telefone || body.client_phone;
+  const clientPhone = rawPhone?.replace(/\D/g, '') || null;
+  const { unit_id } = body;
+
+  console.log(`Checking client: phone=${clientPhone}, unit=${unit_id}`);
+
+  if (!clientPhone) {
+    return new Response(
+      JSON.stringify({ success: false, error: 'Telefone é obrigatório' }),
+      { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
+  }
+
+  if (!unit_id) {
+    return new Response(
+      JSON.stringify({ success: false, error: 'unit_id é obrigatório' }),
+      { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
+  }
+
+  const { data: client, error } = await supabase
+    .from('clients')
+    .select('id, name, phone, birth_date, notes, tags, total_visits, last_visit_at')
+    .eq('unit_id', unit_id)
+    .eq('phone', clientPhone)
+    .maybeSingle();
+
+  if (error) {
+    console.error('Error checking client:', error);
+    return new Response(
+      JSON.stringify({ success: false, error: 'Erro ao buscar cliente' }),
+      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
+  }
+
+  if (!client) {
+    console.log('Cliente não encontrado para o telefone:', clientPhone);
+    return new Response(
+      JSON.stringify({ 
+        success: true, 
+        found: false,
+        message: 'Cliente não encontrado' 
+      }),
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
+  }
+
+  console.log('Cliente encontrado:', client);
+
+  return new Response(
+    JSON.stringify({
+      success: true,
+      found: true,
+      message: 'Cliente encontrado',
+      client: {
+        id: client.id,
+        name: client.name,
+        phone: client.phone,
+        birth_date: client.birth_date,
+        notes: client.notes,
+        tags: client.tags,
+        total_visits: client.total_visits,
+        last_visit_at: client.last_visit_at
+      }
+    }),
+    { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+  );
+}
+
+// Handler para cadastrar novo cliente (sem agendamento)
+async function handleRegisterClient(supabase: any, body: any, corsHeaders: any) {
+  const clientName = body.nome || body.client_name;
+  const rawPhone = body.telefone || body.client_phone;
+  const clientPhone = rawPhone?.replace(/\D/g, '') || null;
+  const clientBirthDate = body.data_nascimento || body.birth_date || null;
+  const clientNotes = body.observacoes || body.notes || null;
+  const clientTags = body.tags || ['Novo'];
+  const { unit_id, company_id } = body;
+
+  console.log(`Registering client: name=${clientName}, phone=${clientPhone}, unit=${unit_id}`);
+  console.log(`Client details - birth_date: ${clientBirthDate}, notes: ${clientNotes}, tags: ${JSON.stringify(clientTags)}`);
+
+  if (!clientName || !clientPhone) {
+    return new Response(
+      JSON.stringify({ success: false, error: 'Nome e telefone são obrigatórios' }),
+      { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
+  }
+
+  if (!unit_id) {
+    return new Response(
+      JSON.stringify({ success: false, error: 'unit_id é obrigatório' }),
+      { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
+  }
+
+  // Verificar se cliente já existe
+  const { data: existingClient, error: checkError } = await supabase
+    .from('clients')
+    .select('id, name, phone, birth_date, notes, tags')
+    .eq('unit_id', unit_id)
+    .eq('phone', clientPhone)
+    .maybeSingle();
+
+  if (checkError) {
+    console.error('Error checking existing client:', checkError);
+    return new Response(
+      JSON.stringify({ success: false, error: 'Erro ao verificar cliente' }),
+      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
+  }
+
+  if (existingClient) {
+    console.log('Cliente já existe:', existingClient);
+    return new Response(
+      JSON.stringify({ 
+        success: false, 
+        error: 'Cliente já cadastrado com este telefone',
+        existing_client: {
+          id: existingClient.id,
+          name: existingClient.name,
+          phone: existingClient.phone,
+          birth_date: existingClient.birth_date,
+          notes: existingClient.notes,
+          tags: existingClient.tags
+        }
+      }),
+      { status: 409, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
+  }
+
+  // Criar novo cliente
+  const { data: newClient, error: createError } = await supabase
+    .from('clients')
+    .insert({
+      unit_id,
+      company_id: company_id || null,
+      name: clientName,
+      phone: clientPhone,
+      birth_date: clientBirthDate,
+      notes: clientNotes,
+      tags: clientTags,
+      total_visits: 0
+    })
+    .select('id, name, phone, birth_date, notes, tags, total_visits')
+    .single();
+
+  if (createError) {
+    console.error('Error creating client:', createError);
+    return new Response(
+      JSON.stringify({ success: false, error: `Erro ao cadastrar cliente: ${createError.message}` }),
+      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
+  }
+
+  console.log('Novo cliente cadastrado com sucesso:', newClient);
+
+  return new Response(
+    JSON.stringify({
+      success: true,
+      message: 'Cliente cadastrado com sucesso!',
+      client: {
+        id: newClient.id,
+        name: newClient.name,
+        phone: newClient.phone,
+        birth_date: newClient.birth_date,
+        notes: newClient.notes,
+        tags: newClient.tags,
+        total_visits: newClient.total_visits
+      }
     }),
     { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
   );
