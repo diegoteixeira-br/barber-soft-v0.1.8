@@ -1,22 +1,32 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
+interface RemainingSpotData {
+  remaining: number;
+  message: string;
+  hasSpots: boolean;
+}
+
 export function useRemainingSpots() {
-  const [remainingSpots, setRemainingSpots] = useState<number>(25);
+  const [remainingSpots, setRemainingSpots] = useState<number>(20);
+  const [message, setMessage] = useState<string>("Vagas disponíveis");
+  const [hasSpots, setHasSpots] = useState<boolean>(true);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     async function fetchRemainingSpots() {
       try {
-        const { data, error } = await supabase.functions.invoke("get-remaining-spots");
+        const { data, error } = await supabase.functions.invoke<RemainingSpotData>("get-remaining-spots");
         
         if (error) {
           console.error("Error fetching remaining spots:", error);
           return;
         }
 
-        if (data?.remaining !== undefined) {
+        if (data) {
           setRemainingSpots(data.remaining);
+          setMessage(data.message);
+          setHasSpots(data.hasSpots);
         }
       } catch (error) {
         console.error("Error:", error);
@@ -49,5 +59,5 @@ export function useRemainingSpots() {
     };
   }, []);
 
-  return { remainingSpots, isLoading };
+  return { remainingSpots, message, hasSpots, isLoading };
 }
