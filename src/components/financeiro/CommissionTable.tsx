@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/table";
 import { FinancialAppointment, calculateCommission, calculateProfit } from "@/hooks/useFinancialData";
 import { Skeleton } from "@/components/ui/skeleton";
+import { PaymentBadge } from "./PaymentMethodModal";
 
 interface CommissionTableProps {
   appointments: FinancialAppointment[];
@@ -63,6 +64,7 @@ export function CommissionTable({ appointments, isLoading }: CommissionTableProp
           <TableRow className="bg-muted/50">
             <TableHead>Data</TableHead>
             <TableHead>Serviço</TableHead>
+            <TableHead>Pagamento</TableHead>
             <TableHead className="text-right">Valor Total</TableHead>
             <TableHead className="text-center">Comissão (%)</TableHead>
             <TableHead className="text-right">Valor Comissão</TableHead>
@@ -81,6 +83,9 @@ export function CommissionTable({ appointments, isLoading }: CommissionTableProp
                   {format(new Date(appointment.start_time), "dd/MM", { locale: ptBR })}
                 </TableCell>
                 <TableCell>{appointment.service?.name || "-"}</TableCell>
+                <TableCell>
+                  <PaymentBadge method={appointment.payment_method} />
+                </TableCell>
                 <TableCell className="text-right">
                   {formatCurrency(appointment.total_price)}
                 </TableCell>
@@ -99,7 +104,7 @@ export function CommissionTable({ appointments, isLoading }: CommissionTableProp
         </TableBody>
         <TableFooter className="bg-muted/80">
           <TableRow>
-            <TableCell colSpan={2} className="font-bold">TOTAL</TableCell>
+            <TableCell colSpan={3} className="font-bold">TOTAL</TableCell>
             <TableCell className="text-right font-bold">
               {formatCurrency(totals.total)}
             </TableCell>
