@@ -223,8 +223,8 @@ export function CalendarWeekView({
               {HOURS.map(hour => (
                 <div
                   key={hour}
-                  className="border-b border-border p-1 text-xs text-muted-foreground text-right pr-2 flex items-start justify-end"
-                  style={{ height: DEFAULT_HOUR_HEIGHT }}
+                  className="border-b border-border text-xs text-muted-foreground text-right pr-2 flex items-start justify-end pt-1"
+                  style={{ height: DEFAULT_HOUR_HEIGHT, boxSizing: "border-box" }}
                 >
                   {String(hour).padStart(2, "0")}:00
                 </div>
@@ -278,7 +278,7 @@ export function CalendarWeekView({
                                   : ""
                               } ${isDayToday && withinHours ? "bg-blue-100/50 dark:bg-blue-900/30" : ""}`
                         }`}
-                        style={{ height: DEFAULT_HOUR_HEIGHT }}
+                        style={{ height: DEFAULT_HOUR_HEIGHT, boxSizing: "border-box" }}
                         onClick={() => !isClosed && onSlotClick(slotDate)}
                       >
                         <div className="space-y-0.5 overflow-hidden h-full">
