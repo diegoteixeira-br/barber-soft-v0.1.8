@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { Scissors, Check, Sparkles, Loader2, Shield } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { useSubscription } from "@/hooks/useSubscription";
@@ -66,8 +67,23 @@ export default function EscolherPlano() {
   const { startCheckout } = useSubscription();
   const [isAnnual, setIsAnnual] = useState(false);
   const [loadingPlan, setLoadingPlan] = useState<string | null>(null);
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    const checkAuth = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      setIsAuthenticated(!!session);
+    };
+    checkAuth();
+  }, []);
 
   const handleSelectPlan = async (planId: string) => {
+    // If not authenticated, redirect to auth with plan info
+    if (!isAuthenticated) {
+      navigate(`/auth?tab=signup&plan=${planId}&billing=${isAnnual ? 'annual' : 'monthly'}`);
+      return;
+    }
+
     setLoadingPlan(planId);
     
     try {
